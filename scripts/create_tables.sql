@@ -135,8 +135,9 @@ WITH (
 );
 
 CREATE TABLE IF NOT EXISTS datawarehouse."default".travaille_a (
-  id_etablissement    varbinary,
-  id_pro_sante        varbinary,
+  id                  varbinary,
+  id_etablissement    varchar,
+  id_pro_sante        varchar,
   mode_exercice       varchar
 )
 WITH (
@@ -144,4 +145,6 @@ WITH (
   partitioning = ARRAY['id_etablissement']
 ); 
 
+
 SHOW TABLES FROM datawarehouse."default";
+
