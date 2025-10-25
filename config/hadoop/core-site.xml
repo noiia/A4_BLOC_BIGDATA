@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<configuration>
+  <property>
+    <name>fs.defaultFS</name>
+    <value>hdfs://namenode:8020</value>
+  </property>
+  <property>
+    <name>hive.metastore.warehouse.dir</name>
+    <value>/warehouse</value>
+  </property>
+  <property>
+  <name>hadoop.proxyuser.trino.hosts</name>
+    <value>*</value>
+  </property>
+  <property>
+    <name>hadoop.proxyuser.trino.users</name>
+    <value>*</value>
+  </property>
+</configuration>

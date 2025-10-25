@@ -1,0 +1,5 @@
+hostPort: datanode:9010
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+rules:
+    - pattern: ".*"

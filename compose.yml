@@ -1,0 +1,210 @@
+services:
+#  caddy:
+#    image: caddy:latest
+#    restart: unless-stopped
+#    ports:
+#      - 80:80
+#      - 443:443
+#      - 443:443/udp
+#    volumes:
+#      - caddy_data:/data
+#      - caddy_config:/config
+#      - ./config/caddy:/etc/caddy
+
+  namenode:
+    image: apache/hadoop:3
+    hostname: namenode
+    command: ["hdfs", "namenode"]
+    ports:
+      - "9870:9870"
+      - "8020:8020"
+    env_file:
+      - ./config/hadoop/env
+    environment:
+      ENSURE_NAMENODE_DIR: "/tmp/hadoop-root/dfs/name"
+    # volumes:
+      # - namenode-data:/tmp/hadoop-root/dfs/name
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "curl -sf http://localhost:9870 >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  datanode:
+    image: apache/hadoop:3
+    command: ["hdfs", "datanode"]
+    env_file:
+      - ./config/hadoop/env
+    volumes:
+      - datanode-data:/tmp/hadoop-root/dfs/data
+    depends_on:
+      namenode:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "curl -sf http://localhost:9864 >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy:
+      mode: replicated
+      replicas: 3
+
+  hdfs-init:
+    image: apache/hadoop:3
+    depends_on:
+      namenode:
+        condition: service_healthy
+    environment:
+      HADOOP_USER_NAME: hadoop
+    volumes:
+      - ./config/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+    command: >
+      bash -lc '
+        echo "[hdfs-init] waiting for HDFS...";
+        for i in {1..60}; do
+          hdfs dfs -ls / >/dev/null 2>&1 && break;
+          sleep 2;
+          echo "[hdfs-init] retry $i";
+        done;
+        echo "[hdfs-init] creating dirs...";
+        hdfs dfs -mkdir -p /tmp /user/hive /user/hive/warehouse /tmp/hive;
+        hdfs dfs -chmod 1777 /tmp;
+        hdfs dfs -chown -R hive:hive /user/hive;
+        hdfs dfs -chmod 777 /user/hive/warehouse /tmp/hive;
+        mkdir -p /tmp/hive/operation_logs
+        chmod -R 777 /tmp/hive
+        echo "[hdfs-init] done.";
+      '
+    restart: "no"
+
+  metastore-db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: metastore
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hive
+    volumes:
+      - metastore_db:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hive -d metastore"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  
+  datalake:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: BigData
+    volumes:
+      - datalake-data:/var/lib/postgresql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      timeout: 20s
+      interval: 10s
+      retries: 10
+
+  hive-metastore:
+    image: apache/hive:4.1.0
+    depends_on:
+      metastore-db:
+        condition: service_healthy
+      namenode:
+        condition: service_healthy
+      hdfs-init:
+        condition: service_completed_successfully
+    environment:
+      DB_DRIVER: postgres
+      SERVICE_NAME: metastore
+      SERVICE_OPTS: >
+        -Xmx512m
+        -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://metastore-db:5432/metastore
+        -Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver
+        -Djavax.jdo.option.ConnectionUserName=hive
+        -Djavax.jdo.option.ConnectionPassword=hive
+        -Dhive.metastore.warehouse.dir=/user/hive/warehouse
+    volumes:
+      - ./config/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+      - ./config/postgresql-42.7.8.jar:/opt/hive/lib/postgresql-42.7.8.jar:ro
+    command: ["bash","-lc","/opt/hive/bin/hive --service metastore"]
+    ports:
+      - "9083:9083"
+
+  coordinator:
+    image: trinodb/trino:latest
+    container_name: trino-coordinator
+    hostname: coordinator
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config/hadoop:/etc/hadoop/conf:ro
+      - ./config/trino/etc/coordinator/config.properties:/etc/trino/config.properties
+      - ./config/trino/etc/jvm.config:/etc/trino/jvm.config
+      - ./config/trino/etc/catalog:/etc/trino/catalog
+    environment:
+      - JAVA_TOOL_OPTIONS=-Xmx1G
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/v1/info || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  worker:
+    image: trinodb/trino:latest
+    depends_on:
+      coordinator:
+        condition: service_healthy
+    volumes:
+      - ./config/hadoop:/etc/hadoop/conf:ro
+      - ./config/trino/etc/worker/config.properties:/etc/trino/config.properties
+      - ./config/trino/etc/jvm.config:/etc/trino/jvm.config
+      - ./config/trino/etc/catalog:/etc/trino/catalog
+    environment:
+      - JAVA_TOOL_OPTIONS=-Xmx1G
+    deploy:
+      mode: replicated
+      replicas: 3
+  
+  jmx-exporter:
+    image: bitnami/jmx-exporter:latest
+    command: 5566 /etc/jmx-exporter/config.yml
+    volumes:
+      - ./config/jmx-exporter/namenode.yml:/etc/jmx-exporter/config.yml:ro
+    depends_on:
+      - namenode
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - coordinator
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - coordinator
+
+volumes:
+  caddy_data:
+  caddy_config:
+  namenode-data:
+  datanode-data:
+  metastore_db:
+  trino-data:
+  datalake-data:
+  grafana-data:
