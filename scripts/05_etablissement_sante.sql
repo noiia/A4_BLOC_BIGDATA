@@ -111,7 +111,8 @@ USING (
       NULLIF(trim(type_voie), ''),        -- type_voie
       NULLIF(trim(indice_repetition_voie), '')
     ) AS id_adresse,
-    gen_pays_id(pays)                     AS id_pays
+    gen_pays_id(pays)                     AS id_pays,
+    finess_etablissement_juridique		  as finess
   FROM datalake.public.etablissement_sante
   WHERE identifiant_organisation IS NOT NULL AND trim(identifiant_organisation) <> ''
 ) s
@@ -119,6 +120,7 @@ ON t.id = s.id
 WHEN MATCHED THEN UPDATE SET
   raison_sociale_site = s.raison_sociale_site,
   id_adresse          = s.id_adresse,
-  id_pays             = s.id_pays
-WHEN NOT MATCHED THEN INSERT (id, raison_sociale_site, id_adresse, id_pays)
-VALUES (s.id, s.raison_sociale_site, s.id_adresse, s.id_pays);
+  id_pays             = s.id_pays,
+  finess			  = s.finess
+WHEN NOT MATCHED THEN INSERT (id, raison_sociale_site, id_adresse, id_pays, finess)
+VALUES (s.id, s.raison_sociale_site, s.id_adresse, s.id_pays, s.finess)
