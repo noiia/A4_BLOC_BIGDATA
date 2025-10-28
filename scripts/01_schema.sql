@@ -45,7 +45,8 @@ CREATE TABLE IF NOT EXISTS datawarehouse."default".etablissement_sante (
   id                  VARCHAR,
   raison_sociale_site VARCHAR,
   id_adresse          BIGINT,
-  id_pays             BIGINT
+  id_pays             BIGINT,
+  finess              INTEGER
 )
 WITH (format_version = 2);
 
