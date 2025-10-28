@@ -1,15 +1,15 @@
 services:
-#  caddy:
-#    image: caddy:latest
-#    restart: unless-stopped
-#    ports:
-#      - 80:80
-#      - 443:443
-#      - 443:443/udp
-#    volumes:
-#      - caddy_data:/data
-#      - caddy_config:/config
-#      - ./config/caddy:/etc/caddy
+  #  caddy:
+  #    image: caddy:latest
+  #    restart: unless-stopped
+  #    ports:
+  #      - 80:80
+  #      - 443:443
+  #      - 443:443/udp
+  #    volumes:
+  #      - caddy_data:/data
+  #      - caddy_config:/config
+  #      - ./config/caddy:/etc/caddy
 
   namenode:
     image: apache/hadoop:3
@@ -23,7 +23,7 @@ services:
     environment:
       ENSURE_NAMENODE_DIR: "/tmp/hadoop-root/dfs/name"
     # volumes:
-      # - namenode-data:/tmp/hadoop-root/dfs/name
+    # - namenode-data:/tmp/hadoop-root/dfs/name
     healthcheck:
       test: ["CMD", "bash", "-lc", "curl -sf http://localhost:9870 >/dev/null"]
       interval: 10s
@@ -90,7 +90,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-  
+
   datalake:
     image: postgres:latest
     environment:
@@ -129,7 +129,7 @@ services:
     volumes:
       - ./config/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
       - ./config/postgresql-42.7.8.jar:/opt/hive/lib/postgresql-42.7.8.jar:ro
-    command: ["bash","-lc","/opt/hive/bin/hive --service metastore"]
+    command: ["bash", "-lc", "/opt/hive/bin/hive --service metastore"]
     ports:
       - "9083:9083"
 
@@ -167,7 +167,7 @@ services:
     deploy:
       mode: replicated
       replicas: 3
-  
+
   jmx-exporter:
     image: bitnami/jmx-exporter:latest
     command: 5566 /etc/jmx-exporter/config.yml
@@ -199,6 +199,24 @@ services:
     depends_on:
       - coordinator
 
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000" # Console + API
+      - "9001:9001" # UI Web
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   caddy_data:
   caddy_config:
@@ -208,3 +226,4 @@ volumes:
   trino-data:
   datalake-data:
   grafana-data:
+  minio-data:

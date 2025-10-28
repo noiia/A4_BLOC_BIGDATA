@@ -18,19 +18,31 @@ CREATE TABLE IF NOT EXISTS datawarehouse."default".adresse_dim (
   indice_repetition_voie  VARCHAR,
   id_region               INTEGER
 )
-WITH (format_version = 2);
+WITH (
+    format_version = 2,
+    bucketed_by = ARRAY['id'],
+    bucket_count = 8
+  );
 
 CREATE TABLE IF NOT EXISTS datawarehouse."default".pays_dim (
   id   BIGINT,
   nom  VARCHAR
 )
-WITH (format_version = 2);
+WITH (
+    format_version = 2,
+    bucketed_by = ARRAY['id'],
+    bucket_count = 8
+    );
 
 CREATE TABLE IF NOT EXISTS datawarehouse."default".region_dim (
   id   INTEGER,
   nom  VARCHAR
 )
-WITH (format_version = 2);
+WITH (
+    format_version = 2,
+    bucketed_by = ARRAY['id'],
+    bucket_count = 8
+    );
 
 CREATE TABLE IF NOT EXISTS datawarehouse."default".professionel_sante (
   id                         VARCHAR,
@@ -39,7 +51,11 @@ CREATE TABLE IF NOT EXISTS datawarehouse."default".professionel_sante (
   profession                 VARCHAR,
   specialite                 VARCHAR
 )
-WITH (format_version = 2);
+WITH (
+    format_version = 2,
+    bucketed_by = ARRAY['id'],
+    bucket_count = 8
+    );
 
 CREATE TABLE IF NOT EXISTS datawarehouse."default".etablissement_sante (
   id                  VARCHAR,
@@ -48,8 +64,11 @@ CREATE TABLE IF NOT EXISTS datawarehouse."default".etablissement_sante (
   id_pays             BIGINT,
   finess              INTEGER
 )
-WITH (format_version = 2);
-
+WITH (
+    format_version = 2,
+    bucketed_by = ARRAY['id'],
+    bucket_count = 8
+    );
 -- ---------- Faits / liens (DATES NATIVES + partitioning utile) ----------
 
 -- Fait décès : dates natives, pruning mensuel, équilibrage par lieu
@@ -62,8 +81,10 @@ CREATE TABLE IF NOT EXISTS datawarehouse."default".deces (
   date_mort          DATE
 )
 WITH (
-  format_version = 2
-);
+    format_version = 2,
+    bucketed_by = ARRAY['id'],
+    bucket_count = 8
+    );
 
 -- Patient : date de naissance native
 CREATE TABLE IF NOT EXISTS datawarehouse."default".patient (
@@ -71,7 +92,11 @@ CREATE TABLE IF NOT EXISTS datawarehouse."default".patient (
   sexe             VARCHAR,
   date_naissance   DATE
 )
-WITH (format_version = 2);
+WITH (
+    format_version = 2,
+    bucketed_by = ARRAY['id'],
+    bucket_count = 8
+    );
 
 -- Hospitalisations : dates natives, pruning sur date_entree, équilibrage par établissement
 CREATE TABLE IF NOT EXISTS datawarehouse."default".hospitalisations (
@@ -83,8 +108,10 @@ CREATE TABLE IF NOT EXISTS datawarehouse."default".hospitalisations (
   id_etablissement  VARCHAR
 )
 WITH (
-  format_version = 2
-);
+    format_version = 2,
+    bucketed_by = ARRAY['id'],
+    bucket_count = 8
+    );
 
 -- Consultations
 CREATE TABLE IF NOT EXISTS datawarehouse."default".consultation (
@@ -95,14 +122,21 @@ CREATE TABLE IF NOT EXISTS datawarehouse."default".consultation (
   ts_debut          TIMESTAMP,
   ts_fin            TIMESTAMP
 )
-WITH (format_version = 2);
+WITH (
+    format_version = 2,
+    bucketed_by = ARRAY['id'],
+    bucket_count = 8
+    );
 
 CREATE TABLE IF NOT EXISTS datawarehouse."default".diagnostic_dim (
   code    VARCHAR,   -- ex. 'S02800'
   libelle VARCHAR    -- ex. 'Traumatisme...'
 )
-WITH (format_version = 2);
-
+WITH (
+    format_version = 2,
+    bucketed_by = ARRAY['code'],
+    bucket_count = 8
+    );
 
 -- Satisfaction / Note_a : faible volume
 CREATE TABLE IF NOT EXISTS datawarehouse."default".satisfaction (
@@ -110,13 +144,21 @@ CREATE TABLE IF NOT EXISTS datawarehouse."default".satisfaction (
   score_global     INTEGER,
   id_etablissement VARCHAR
 )
-WITH (format_version = 2);
+WITH (
+    format_version = 2,
+    bucketed_by = ARRAY['id'],
+    bucket_count = 8
+    );
 
 CREATE TABLE IF NOT EXISTS datawarehouse."default".note_a (
   id_region        INTEGER,
   id_satisfaction  INTEGER
 )
-WITH (format_version = 2);
+WITH (
+    format_version = 2,
+    bucketed_by = ARRAY['id_region'],
+    bucket_count = 8
+    );
 
 -- Relation de travail (faible volume)
 CREATE TABLE IF NOT EXISTS datawarehouse."default".travaille_a (
@@ -124,4 +166,8 @@ CREATE TABLE IF NOT EXISTS datawarehouse."default".travaille_a (
   id_pro_sante      VARCHAR,
   mode_exercice     VARCHAR
 )
-WITH (format_version = 2);
+WITH (
+    format_version = 2,
+    bucketed_by = ARRAY['id_etablissement'],
+    bucket_count = 8
+    );
