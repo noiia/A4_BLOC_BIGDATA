@@ -209,7 +209,7 @@ services:
     volumes:
       - ./config/garage/garage.toml:/etc/garage.toml:ro
       - garage_meta:/var/lib/garage/meta
-      - garage-data:/var/lib/garage/data
+      - garage_data:/var/lib/garage/data
     restart: unless-stopped
 
 volumes:
