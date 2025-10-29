@@ -1,0 +1,11 @@
+data_dir = "/var/lib/garage"
+metadata_dir = "/var/lib/garage/meta"
+rpc_bind_addr = "0.0.0.0:3902"
+rpc_secret = "un_secret_super_long"
+
+[s3_api]
+bind_addr = "0.0.0.0:3900"
+root_domain = "localhost"
+
+[admin]
+bind_addr = "0.0.0.0:3901"
