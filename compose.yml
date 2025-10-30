@@ -228,7 +228,7 @@ services:
     environment:
       - ENDPOINT=garage:3900
       - REGION=garage
-      - USE_SSL=true # set true for production
+      - USE_SSL=false # set true for production
     entrypoint: /bin/sh
     command: |
       -c "
