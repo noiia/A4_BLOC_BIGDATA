@@ -221,7 +221,6 @@ services:
 
   s3-manager:
     image: cloudlena/s3manager:latest
-    container_name: garage-ui
     ports:
       - "8888:8080"
     volumes:
@@ -229,7 +228,7 @@ services:
     environment:
       - ENDPOINT=garage:3900
       - REGION=garage
-    #      - USE_SSL=false # comment for production
+      - USE_SSL=true # set true for production
     entrypoint: /bin/sh
     command: |
       -c "
