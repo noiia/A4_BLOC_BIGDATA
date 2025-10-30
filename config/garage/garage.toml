@@ -1,11 +1,21 @@
-data_dir = "/var/lib/garage"
 metadata_dir = "/var/lib/garage/meta"
-rpc_bind_addr = "0.0.0.0:3902"
-rpc_secret = "un_secret_super_long"
+data_dir = "/var/lib/garage/data"
+
+replication_factor = 1
+consistency_mode = "consistent"
+
+rpc_bind_addr = "[::]:3901"
+rpc_public_addr = "127.0.0.1:3901"
+rpc_secret = "1799bccfd7411eddcf9ebd316bc1f5287ad12a68094e1c6ac6abde7e6feae1ec"
+
+bootstrap_peers = []
 
 [s3_api]
-bind_addr = "0.0.0.0:3900"
-root_domain = "localhost"
+s3_region = "garage"
+api_bind_addr = "[::]:3900"
+root_domain = ".s3.garage"
 
-[admin]
-bind_addr = "0.0.0.0:3901"
+[s3_web]
+bind_addr = "[::]:3902"
+root_domain = ".web.garage"
+index = "index.html"

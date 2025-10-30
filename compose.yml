@@ -200,16 +200,49 @@ services:
       - coordinator
 
   garage:
-    image: dxflrs/garage:v2.1.0
-    container_name: garage
+    build:
+      context: ./config/garage
+      dockerfile: Dockerfile
     ports:
-      - "3900:3900" # API S3
-      - "3901:3901" # Admin/API HTTP
-      - "3902:3902" # RPC inter-noeuds
+      - "3900:3900"
+      - "3901:3901"
+      - "3902:3902"
     volumes:
       - ./config/garage/garage.toml:/etc/garage.toml:ro
       - garage_meta:/var/lib/garage/meta
       - garage_data:/var/lib/garage/data
+      - ./credentials:/credentials
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "garage", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  s3-manager:
+    image: cloudlena/s3manager:latest
+    container_name: garage-ui
+    ports:
+      - "8888:8080"
+    volumes:
+      - ./credentials:/credentials:ro
+    environment:
+      - ENDPOINT=garage:3900
+      - REGION=garage
+    #      - USE_SSL=false # comment for production
+    entrypoint: /bin/sh
+    command: |
+      -c "
+      echo '⏳ Waiting for credentials...'
+      while [ ! -f /credentials/.ready ]; do sleep 1; done
+      export ACCESS_KEY_ID=$$(cat /credentials/access_key)
+      export SECRET_ACCESS_KEY=$$(cat /credentials/secret_key)
+      echo '✅ Credentials loaded!'
+      exec /usr/src/app/s3manager
+      "
+    depends_on:
+      garage:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
