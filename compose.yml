@@ -169,7 +169,7 @@ services:
       replicas: 3
 
   jmx-exporter:
-    image: bitnami/jmx-exporter:latest
+    image: soldevelo/jmx-exporter:latest
     command: 5566 /etc/jmx-exporter/config.yml
     volumes:
       - ./config/jmx-exporter/namenode.yml:/etc/jmx-exporter/config.yml:ro
